@@ -91,5 +91,44 @@ module processor(
     input [31:0] data_readRegA, data_readRegB;
 
     /* YOUR CODE STARTS HERE */
+	 
+	 // split up the instruction into its parts
+	 wire [5:0] opcode;
+	 assign opcode = q_imem[31:27];
+	 
+	 wire [4:0] rd, rs, rt, shamt, ALUop;
+	 assign rd = q_imem[26:22];
+	 assign rs = q_imem[21:17];
+	 assign rt = q_imem[16:12];
+	 assign shamt = q_imem[11:7];
+	 assign ALUop = q_imem[6:2];
+	 
+	 wire [31:0] immed;
+	 assign immed = { {17{q_imem[15]}}, q_imem[14:0]};
+	 
+	 // control circuit
+	 wire ALUinB, Rdst, Rwd;
+	 or(ALUinB, opcode[4], opcode[3], opcode[2], opcode[1], opcode[0]);
+	 nor(Rdst, opcode[4], opcode[3], opcode[2], opcode[1], opcode[0]);
+	 assign Rwd = opcode[1];
+	 assign wren = opcode[3];
+	 or(ctrl_writeEnable, Rdst, opcode[0]);
+	 
+	 // datapath
+	 wire [31:0] data_readRegA, data_readRegB
+	 assign reg_dest = Rdst ? rd : rt;
+	 regfile regf(clock, ctrl_writeEnable, reset, reg_dest,
+			rs, rt, data_writeReg, data_readRegA, data_readRegB);
+			
+	 assign alu_input = ALUinB ? immed : data_readRegB;
+	 alu alu1(data_readRegA, alu_input, ALUop,
+			shamt, data_result, isNotEqual, isLessThan, overflow);
+			
+	 dmem data_mem(data_result, clock, data_readRegB, wren, q);
+	 assign data_writeReg = Rwd ? q : data_result;
+	
+	// address_imem = address_imem + 16;
+	alu alu_p4(address_imem, 32'h10, 5'b0, 5'b0, address_imem, isNotEqual, isLessThan, overflow);
+		
 
 endmodule
