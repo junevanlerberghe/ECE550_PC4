@@ -103,36 +103,51 @@ module processor(
 	 assign wren = opcode[3];
 	 
 	 //Imem
-	 wire [31:0] address_32, address_in;
-	 assign address_in = { {20'b0}, address_imem};
-	 alu alu_p4(address_in, 32'h10, 5'b0, 5'b0, address_32, isNotEqual, isLessThan, overflow);
-	 assign address_imem = address_32[11:0];
+	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
+	 wire [11:0] adr_in, adr_out;
+	 wire [31:0] adr_out_32;
+	 pc pc1(adr_in, clock, reset, adr_out);
+	 assign adr_out_32 = { {20'b0}, adr_out};
+	 alu alu_p4(adr_out_32, 32'd1, 5'b0, 5'b0, address_imem, isNotEqual_pc, isLessThan_pc, overflow_pc);
+	 
 		
 	 //Regfile
+	 wire [4:0] writeReg_normal;
 	 assign ctrl_readRegA = q_imem[21:17];
 	 assign ctrl_readRegB = q_imem[16:12];
 	 or(ctrl_writeEnable, Rdst, opcode[0]);
-	 assign ctrl_writeReg = Rdst ? q_imem[26:22] : ctrl_readRegB; // Rdst ? rd : rt
+	 assign writeReg_normal = Rdst ? q_imem[26:22] : ctrl_readRegB; // Rdst ? rd : rt
 	 
 	 // ALU
 	 wire [31:0] immed;
 	 assign immed = { {17{q_imem[15]}}, q_imem[14:0]};
 	 
 	 wire [4:0] shamt, ALUop;
+	 wire [31:0] alu_input;
 	 assign ALUop = q_imem[6:2];
 	 assign shamt = q_imem[11:7];
 	 
 	 assign alu_input = ALUinB ? immed : data_readRegB;
 	 
+	 wire isNotEqual, isLessThan, overflow;
 	 wire [31:0] data_result;
 	 alu alu1(data_readRegA, alu_input, ALUop,
 			shamt, data_result, isNotEqual, isLessThan, overflow);
+		
 	 
 	 // DMem
+	 wire [31:0] data_writeReg_normal;
 	 assign address_dmem = data_result[11:0];
 	 assign data = data_readRegB;
-	 
 			
-	 assign data_writeReg = Rwd ? q_dmem : data_result;
+	 assign data_writeReg_normal = Rwd ? q_dmem : data_result;
+	 
+	 // Overflow Check
+	 wire [1:0] rstatus;
+	 wire check_ovf;
+	 check_overflow ovf(opcode, ALUop, check_ovf, rstatus);
+	
+	 assign data_writeReg = check_ovf ? (overflow ? rstatus : data_writeReg_normal) : data_writeReg_normal;
+	 assign ctrl_writeReg = check_ovf ? (overflow ? 5'd30 : writeReg_normal) : writeReg_normal;
 
 endmodule
