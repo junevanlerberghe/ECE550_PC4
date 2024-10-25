@@ -93,7 +93,7 @@ module processor(
     /* YOUR CODE STARTS HERE */
 	 
 	 // Control Circuit
-	 wire [5:0] opcode;
+	 wire [4:0] opcode;
 	 assign opcode = q_imem[31:27];
 	 
 	 wire ALUinB, Rdst, Rwd;
@@ -104,29 +104,32 @@ module processor(
 	 
 	 //Imem
 	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
-	 wire [11:0] adr_in, adr_out;
-	 wire [31:0] adr_out_32;
-	 pc pc1(adr_in, clock, reset, adr_out);
-	 assign adr_out_32 = { {20'b0}, adr_out};
-	 alu alu_p4(adr_out_32, 32'd1, 5'b0, 5'b0, address_imem, isNotEqual_pc, isLessThan_pc, overflow_pc);
+	 wire [11:0] adr_out;
+	 wire [31:0] adr_out_32, imem_32;
 	 
+	 pc pc1(address_imem, clock, reset, adr_out);
+	 assign adr_out_32 = { {20'b0}, adr_out};
+	 alu alu_p4(adr_out_32, 32'd1, 5'b0, 5'b0, imem_32, isNotEqual_pc, isLessThan_pc, overflow_pc);
+	 assign address_imem = imem_32[11:0];
 		
 	 //Regfile
 	 wire [4:0] writeReg_normal;
 	 assign ctrl_readRegA = q_imem[21:17];
 	 assign ctrl_readRegB = q_imem[16:12];
 	 or(ctrl_writeEnable, Rdst, opcode[0]);
-	 assign writeReg_normal = Rdst ? q_imem[26:22] : ctrl_readRegB; // Rdst ? rd : rt
+	 //assign writeReg_normal = Rdst ? q_imem[26:22] : ctrl_readRegB; // Rdst ? rd : rt
+	 assign writeReg_normal = q_imem[26:22];
 	 
 	 // ALU
 	 wire [31:0] immed;
-	 assign immed = { {17{q_imem[15]}}, q_imem[14:0]};
+	 assign immed = { {15{q_imem[16]}}, q_imem[16:0]};
 	 
-	 wire [4:0] shamt, ALUop;
+	 wire [4:0] shamt, ALUop_r, ALUop;
 	 wire [31:0] alu_input;
-	 assign ALUop = q_imem[6:2];
+	 assign ALUop_r = q_imem[6:2];
 	 assign shamt = q_imem[11:7];
 	 
+	 assign ALUop = ALUinB ? 5'b0 : ALUop_r;
 	 assign alu_input = ALUinB ? immed : data_readRegB;
 	 
 	 wire isNotEqual, isLessThan, overflow;

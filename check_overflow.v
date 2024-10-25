@@ -1,5 +1,5 @@
 module check_overflow(opcode, ALUop, check_ovf, rstatus);
-	input [4:0] opcode, ALUop;
+	input [4:0] ALUop, opcode;
 	output check_ovf;
 	output [1:0] rstatus;
 
