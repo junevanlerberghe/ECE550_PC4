@@ -98,9 +98,9 @@ module processor(
 	 
 	 wire ALUinB, Rdst, Rwd;
 	 or(ALUinB, opcode[4], opcode[3], opcode[2], opcode[1], opcode[0]);
-	 nor(Rdst, opcode[4], opcode[3], opcode[2], opcode[1], opcode[0]);
-	 assign Rwd = opcode[1];
-	 assign wren = opcode[3];
+	 assign Rdst = ALUinB;
+	 assign Rwd = opcode[3];
+	 assign wren = opcode[1];
 	 
 	 //Imem
 	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
@@ -114,11 +114,12 @@ module processor(
 		
 	 //Regfile
 	 wire [4:0] writeReg_normal;
-	 assign ctrl_readRegA = q_imem[21:17];
-	 assign ctrl_readRegB = q_imem[16:12];
-	 or(ctrl_writeEnable, Rdst, opcode[0]);
+	 assign ctrl_readRegA = q_imem[21:17]; // rs
+	 assign writeReg_normal = q_imem[26:22]; // rd
+	 assign ctrl_readRegB = Rdst ? writeReg_normal : q_imem[16:12]; // rt // rt if r-type, rd if i-type
+	 assign ctrl_writeEnable = ~opcode[1];
 	 //assign writeReg_normal = Rdst ? q_imem[26:22] : ctrl_readRegB; // Rdst ? rd : rt
-	 assign writeReg_normal = q_imem[26:22];
+	 
 	 
 	 // ALU
 	 wire [31:0] immed;
