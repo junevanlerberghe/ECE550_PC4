@@ -93,6 +93,7 @@ module processor(
     /* YOUR CODE STARTS HERE */
 	 
 	 // Control Circuit
+	 /*
 	 wire [4:0] opcode;
 	 assign opcode = q_imem[31:27];
 	 
@@ -101,6 +102,10 @@ module processor(
 	 assign Rdst = ALUinB;
 	 assign Rwd = opcode[3];
 	 assign wren = opcode[1];
+	 */
+	 wire ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx;
+	 wire [4:0] ALUop;
+	 controls control_circuit(q_imem, ALUop, ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx);
 	 
 	 //Imem
 	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
@@ -117,20 +122,16 @@ module processor(
 	 assign ctrl_readRegA = q_imem[21:17]; // rs
 	 assign writeReg_normal = q_imem[26:22]; // rd
 	 assign ctrl_readRegB = Rdst ? writeReg_normal : q_imem[16:12]; // rt // rt if r-type, rd if i-type
-	 assign ctrl_writeEnable = ~opcode[1];
-	 //assign writeReg_normal = Rdst ? q_imem[26:22] : ctrl_readRegB; // Rdst ? rd : rt
-	 
+	 //assign ctrl_writeEnable = ~opcode[1];	 
 	 
 	 // ALU
 	 wire [31:0] immed;
 	 assign immed = { {15{q_imem[16]}}, q_imem[16:0]};
 	 
-	 wire [4:0] shamt, ALUop_r, ALUop;
+	 wire [4:0] shamt;
 	 wire [31:0] alu_input;
-	 assign ALUop_r = q_imem[6:2];
 	 assign shamt = q_imem[11:7];
-	 
-	 assign ALUop = ALUinB ? 5'b0 : ALUop_r;
+
 	 assign alu_input = ALUinB ? immed : data_readRegB;
 	 
 	 wire isNotEqual, isLessThan, overflow;
@@ -149,6 +150,8 @@ module processor(
 	 // Overflow Check
 	 wire [1:0] rstatus;
 	 wire check_ovf;
+	 wire[4:0] opcode;
+	 assign opcode = q_imem[31:27];
 	 check_overflow ovf(opcode, ALUop, check_ovf, rstatus);
 	
 	 assign data_writeReg = check_ovf ? (overflow ? rstatus : data_writeReg_normal) : data_writeReg_normal;
