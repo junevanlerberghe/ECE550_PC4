@@ -93,36 +93,29 @@ module processor(
     /* YOUR CODE STARTS HERE */
 	 
 	 // Control Circuit
-	 /*
-	 wire [4:0] opcode;
-	 assign opcode = q_imem[31:27];
-	 
-	 wire ALUinB, Rdst, Rwd;
-	 or(ALUinB, opcode[4], opcode[3], opcode[2], opcode[1], opcode[0]);
-	 assign Rdst = ALUinB;
-	 assign Rwd = opcode[3];
-	 assign wren = opcode[1];
-	 */
-	 wire ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx;
 	 wire [4:0] ALUop;
+	 wire ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx;
 	 controls control_circuit(q_imem, ALUop, ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx);
 	 
 	 //Imem
 	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
 	 wire [11:0] adr_out;
-	 wire [31:0] adr_out_32, imem_32;
+	 wire [31:0] adr_out_32, imem_32, final_pc, pc_plus_one;
 	 
 	 pc pc1(address_imem, clock, reset, adr_out);
 	 assign adr_out_32 = { {20'b0}, adr_out};
-	 alu alu_p4(adr_out_32, 32'd1, 5'b0, 5'b0, imem_32, isNotEqual_pc, isLessThan_pc, overflow_pc);
-	 assign address_imem = imem_32[11:0];
+	 // adding one to PC
+	 alu alu_pc_one(adr_out_32, 32'd1, 5'b0, 5'b0, pc_plus_one, isNotEqual_pc, isLessThan_pc, overflow_pc);
+	
+	 next_pc pc2(pc_plus_one, q_imem, isNotEqual, isLessThan, blt, bex, bne, jp, jr, data_readRegA, data_readRegB, final_pc);
+	 assign address_imem = final_pc[11:0];
 		
 	 //Regfile
-	 wire [4:0] writeReg_normal;
-	 assign ctrl_readRegA = q_imem[21:17]; // rs
-	 assign writeReg_normal = q_imem[26:22]; // rd
-	 assign ctrl_readRegB = Rdst ? writeReg_normal : q_imem[16:12]; // rt // rt if r-type, rd if i-type
-	 //assign ctrl_writeEnable = ~opcode[1];	 
+	 wire [4:0] writeReg_normal, jal_d;
+	 assign jal_d = jal ? 5'd31 : q_imem[26:22]; // rd or reg 31
+	 assign writeReg_normal = setx ? 5'd30 : jal_d; // reg 30 or jal result
+	 assign ctrl_readRegA = bex ? 5'd30 : q_imem[21:17]; // rs or reg 30
+	 assign ctrl_readRegB = Rdst ? writeReg_normal : q_imem[16:12]; // rt // rt if r-type, rd if i-type 
 	 
 	 // ALU
 	 wire [31:0] immed;
@@ -147,14 +140,24 @@ module processor(
 			
 	 assign data_writeReg_normal = Rwd ? q_dmem : data_result;
 	 
+	 //jal
+	 wire [31:0] jal_result;
+	 assign jal_result = jal ? pc_plus_one : data_writeReg_normal;
+	 
 	 // Overflow Check
 	 wire [1:0] rstatus;
 	 wire check_ovf;
 	 wire[4:0] opcode;
+	 wire [31:0] ovf_write_data;
 	 assign opcode = q_imem[31:27];
 	 check_overflow ovf(opcode, ALUop, check_ovf, rstatus);
 	
-	 assign data_writeReg = check_ovf ? (overflow ? rstatus : data_writeReg_normal) : data_writeReg_normal;
+	 assign ovf_write_data = check_ovf ? (overflow ? rstatus : jal_result) : jal_result;
 	 assign ctrl_writeReg = check_ovf ? (overflow ? 5'd30 : writeReg_normal) : writeReg_normal;
+	 
+	 // setx
+	 wire [31:0] target;
+	 assign target = { {5{1'b0}}, q_imem[26:0]};
+	 assign data_writeReg = setx ? target : ovf_write_data;
 
 endmodule
