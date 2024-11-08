@@ -97,18 +97,6 @@ module processor(
 	 wire ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx;
 	 controls control_circuit(q_imem, ALUop, ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, jp, jr, bne, blt, bex, setx);
 	 
-	 //Imem
-	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
-	 wire [11:0] adr_out;
-	 wire [31:0] adr_out_32, imem_32, final_pc, pc_plus_one;
-	 
-	 pc pc1(address_imem, clock, reset, adr_out);
-	 assign adr_out_32 = { {20'b0}, adr_out};
-	 // adding one to PC
-	 alu alu_pc_one(adr_out_32, 32'd1, 5'b0, 5'b0, pc_plus_one, isNotEqual_pc, isLessThan_pc, overflow_pc);
-	
-	 next_pc pc2(pc_plus_one, q_imem, isNotEqual, isLessThan, blt, bex, bne, jp, jr, data_readRegA, data_readRegB, final_pc);
-	 assign address_imem = final_pc[11:0];
 		
 	 //Regfile
 	 wire [4:0] writeReg_normal, jal_d;
@@ -132,6 +120,25 @@ module processor(
 	 alu alu1(data_readRegA, alu_input, ALUop,
 			shamt, data_result, isNotEqual, isLessThan, overflow);
 		
+	 
+	 //Imem
+	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
+	 wire [11:0] adr_out;
+	 wire [31:0] adr_out_32, imem_32, final_pc, pc_plus_one;
+	 
+	 pc pc1(final_pc[11:0], clock, reset, address_imem);
+	 alu alu_pc_one({20'd0, address_imem}, 32'd1, 5'b0, 5'b0, pc_plus_one, isNotEqual_pc, isLessThan_pc, overflow_pc);
+	 next_pc pc2(pc_plus_one, q_imem, isNotEqual, isLessThan, blt, bex, bne, jp, jr, data_readRegA, data_readRegB, final_pc);
+	 
+	 
+	 //pc pc1(address_imem, clock, reset, adr_out);
+	 //assign adr_out_32 = { {20'b0}, adr_out};
+	 // adding one to PC
+	 //alu alu_pc_one(adr_out_32, 32'd1, 5'b0, 5'b0, pc_plus_one, isNotEqual_pc, isLessThan_pc, overflow_pc);
+	
+	 //next_pc pc2(pc_plus_one, q_imem, isNotEqual, isLessThan, blt, bex, bne, jp, jr, data_readRegA, data_readRegB, final_pc);
+	 //assign address_imem = final_pc[11:0];
+	 
 	 
 	 // DMem
 	 wire [31:0] data_writeReg_normal;
