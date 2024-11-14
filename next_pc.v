@@ -10,15 +10,16 @@ module next_pc(input_pc, q_imem, isNotEqual, isLessThan, blt, bex, bne, jp, jr, 
 	
 	wire [31:0] pc_plus_1_N;
 	wire isNotEqual_pc, isLessThan_pc, overflow_pc, isNotEqual_pc2, isLessThan_pc2, overflow_pc2;
-	wire bex_or_result, bne_result, blt_result, branch_control, bex_control;
+	wire bex_or_result, bne_result, blt_result, branch_control, bex_control, isLessThan_result;
 	wire [31:0] jp_result, jr_result, branch_pc_out;
 	
 	// adding pc + 1 + N
 	alu alu_pc_one_N(input_pc, immed, 5'b0, 5'b0, pc_plus_1_N, isNotEqual_pc2, isLessThan_pc2, overflow_pc2);
 	
 	// bne and blt 
+	not (isLessThan_result, isLessThan);
 	and(bne_result, bne, isNotEqual);
-	and(blt_result, blt, isLessThan);
+	and(blt_result, blt, isLessThan_result);
 	or(branch_control, bne_result, blt_result);
 	
 	assign branch_pc_out = branch_control ? pc_plus_1_N : input_pc;

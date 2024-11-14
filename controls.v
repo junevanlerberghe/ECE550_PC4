@@ -21,8 +21,8 @@ module controls(q_imem, ALUop, ALUinB, wren, ctrl_writeEnable, Rwd, Rdst, jal, j
 	
 	or(ALUinB, addi_sop, sw_sop, lw_sop);
 	assign wren = sw_sop;
-	or(ctrl_writeEnable, add_sop, addi_sop, lw_sop);
-	or(Rdst, addi_sop, sw_sop, lw_sop, bne_sop, jr_sop);
+	or(ctrl_writeEnable, add_sop, addi_sop, lw_sop, jal_sop, setx_sop);
+	or(Rdst, addi_sop, sw_sop, lw_sop, bne_sop, jr_sop, blt_sop);
 	assign Rwd = lw_sop;
 	assign jal = jal_sop;
 	or(jp, jal_sop, j_sop);
