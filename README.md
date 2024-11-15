@@ -5,6 +5,7 @@
 ## Overview
 This project is a full processor that implements the following operations:
   - add, sub, addi, sll, sra, lw, sw, and, or, j, bne, jal, jr, blt, bex, setx 
+
 The skeleton is a wrapper that instantiates our modules: imem, dmem, processor and regfile. Each of these has
 its own clock. 
 
