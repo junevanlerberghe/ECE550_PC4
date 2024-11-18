@@ -119,7 +119,6 @@ module processor(
 	 wire [31:0] data_result;
 	 alu alu1(data_readRegA, alu_input, ALUop,
 			shamt, data_result, isNotEqual, isLessThan, overflow);
-		
 	 
 	 //Imem
 	 wire  isNotEqual_pc, isLessThan_pc, overflow_pc;
