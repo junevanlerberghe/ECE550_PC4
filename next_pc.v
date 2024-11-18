@@ -19,7 +19,7 @@ module next_pc(input_pc, q_imem, isNotEqual, isLessThan, blt, bex, bne, jp, jr, 
 	// bne and blt 
 	not (isLessThan_result, isLessThan);
 	and(bne_result, bne, isNotEqual);
-	and(blt_result, blt, isLessThan_result);
+	and(blt_result, blt, isLessThan_result, isNotEqual);
 	or(branch_control, bne_result, blt_result);
 	
 	assign branch_pc_out = branch_control ? pc_plus_1_N : input_pc;
